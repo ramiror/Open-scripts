@@ -1,0 +1,21 @@
+#!/bin/bash
+#
+# Este script sirve para hacer backups de instalaciones de Wordpress
+# o cualquier otra aplicación que conste de un sistema de archivos 
+# y una base de datos.
+# 
+PORT=22
+HOST=example.com
+SERVER_WORDPRESS_FOLDER="/var/www/mywordpress"
+SERVER_SQL_DUMP_FOLDER="/sql_dumps/"
+
+LOCAL_BACKUP_FOLDER="~/mywordpress_backup/"
+LOCAL_SQL_DUMP_FOLDER="~/mywordpress_sql_backup/"
+
+# Fin de la configuración
+
+rsync --recursive -e "ssh -p $PORT"  $HOST:$SERVER_WORDPRESS_FOLDER/* $LOCAL_BACKUP_FOLDER
+
+rsync --recursive -e "ssh -p $PORT"  $HOST:$SERVER_SQL_DUMP_FOLDER/* $LOCAL_SQL_DUMP_FOLDER
+
+echo Fin de la sincrionización

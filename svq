@@ -1,0 +1,245 @@
+#! /bin/bash
+#
+# SVN Queue is a svn helper useful when you need to makes commit with files and you are working in an environment with alots of files and a big folder
+# structure, or when you don't want to make mistakes when commiting from terminal / console.
+#
+# SVN Queue was created by Hugo Massaroli in 2011
+#
+#
+#TODO: add coonfigurable commits, i.e., a compilation queue that commits all that is inside build folder. It would have 
+# a file named svn_queue_queuename.tmp in tmp folder.
+#
+#TODO: Add an options that list, in a directory, all filas that weren't added to the queue (in this way is easier to see what file is missing)
+#
+# Configurable values
+DEFAULT_QUEUE_PATH=/tmp/svn_queue.tmp
+# End of configurable values
+
+# Creating the file if it doesn't exists
+touch $DEFAULT_QUEUE_PATH
+SVN_QUEUE_FILES=$(cat $DEFAULT_QUEUE_PATH)
+
+# This function prints available files for commit from current directory. 
+# The first argument should be "list" for printing files line by line or
+# string for printing files separated by spaces
+# BUG: when the user is not in the original folder but in a parent folder
+# some files appears to be available but they are not
+function available_files() {
+	STR=""
+	for word in $SVN_QUEUE_FILES
+        do
+                RESULT=$(svn st $word | grep "^[AM]" | wc -l)
+                if [ $RESULT -gt 0 ]
+                then
+			if [ $1 = "list" ]
+			then
+                        	echo $word
+			else
+				STR="$STR $word"
+			fi
+                fi
+        done
+	if [ $1 = "string" ]
+	then
+		echo $STR
+	fi 
+	return 0;
+}
+
+# Prints the files added or modified that weren't added to the queue.
+function left_files() {
+	filter_svn_st_results "" "A M"
+	for file in $FILTERED_RESULTS
+	do 
+		ignore=false
+		for queue_file in $SVN_QUEUE_FILES
+		do
+			if [ "$queue_file" = "$file" ]
+			then
+				ignore=true
+				break
+			fi
+		done
+		if [ $ignore = true ]
+		then
+			continue
+		fi
+		echo $file
+	done
+}
+
+# This function asks the user when a search is matched by more than one file
+# You can use the variable FILE after calling this function
+function autocomplete_file() {
+	#TODO: ver que pasa cuando hacés locales algunas variables
+	# Check file has changes
+	filter_svn_st_results $1 "$2"
+	# (FILTERED_RESULTS is declared inside filter_svn_st_results)
+	local ARRAY_RESULTS=( $FILTERED_RESULTS )
+	local RESULTS_COUNT=${#ARRAY_RESULTS[*]}
+
+	if [ "$RESULTS_COUNT" = "0" ]
+	then
+		return
+	fi
+
+	if [ "$RESULTS_COUNT" = "1" ]
+	then
+		FILE="$FILTERED_RESULTS"
+	else
+		local CHOOSEN_OPTION=0
+		# Let the user choice and catchs user bad input
+		while [ "$CHOOSEN_OPTION" -lt "1" ] || [ "$CHOOSEN_OPTION" -gt "$RESULTS_COUNT" ] 
+		do
+			echo "There are $RESULTS_COUNT coincidences. Which do you choose?"
+			i=1
+			for name in ${ARRAY_RESULTS[@]}
+			do
+				echo "$i $name"
+				((i++)) 
+			done
+			read CHOOSEN_OPTION
+		done
+		FILE=${ARRAY_RESULTS[$(($CHOOSEN_OPTION-1))]}
+	fi
+}
+
+# Filter svn st results depending of the file word passed as first parameter and the MATCH_STATES array passed as the second parameter.
+filter_svn_st_results() {
+	#Joining states string for use in grep's regular expression
+	local STATES_STRING=$2
+	local match_states=""
+	for search_state in $STATES_STRING
+	do
+		match_states="$search_state$match_states"
+	done
+	RESULT=$(svn st | grep "^[$match_states]" | grep "$1" )
+	for word in $RESULT
+	do
+		is_state=false
+		for state in $STATES_STRING
+		do
+			if [ "$word" = "$state" ]
+			then
+				is_state=true
+				continue				
+			fi
+		done
+		if [ $is_state = true ]
+		then
+			continue
+		fi
+		FILTERED_RESULTS="$word $FILTERED_RESULTS"
+	done
+}
+
+function check_coincidences() {
+	local USER_INPUT=$1
+	if [ "$FILE" = "" ]
+	then
+		echo "No coincidences for $USER_INPUT"
+		exit
+	fi
+}
+
+function enqueue() {
+	autocomplete_file $1 "A M D"
+	check_coincidences $1
+	echo $FILE >> $DEFAULT_QUEUE_PATH
+}
+
+COMMAND=$1
+
+# Default behavior when no arguments are passed
+if [ $# = 0 ]
+then
+	COMMAND="list"
+fi
+
+case $COMMAND in
+-h )
+	cat <<EOF
+
+SVN Queue's Help
+
+	cd mysvnprojectfolder
+	svq command [options]
+
+	Enqueue file:
+	svq e filename
+
+	List enqueued files:
+	svq l
+
+	Commit enqueued files:
+	svq ci
+
+	Clear queue:
+	svq cl
+
+	Left files (files to commit that are not in the queue)
+	svq le
+
+	Diff file (autocomplete helper)
+	svq d filename
+
+	Add file (autocomplete helper)
+	svq a filename
+
+	
+EOF
+	;; 
+l | list )
+	for word in $SVN_QUEUE_FILES
+	do
+		echo $word
+	done
+	;;
+av | available )
+	available_files list
+	;;
+ci | commit )
+	COMMIT_FILES=$(available_files string)
+	if [ -z "$COMMIT_FILES" ]
+	then
+		echo "Nothing to commit here"
+		exit
+	fi
+	svn ci $COMMIT_FILES -m "$2"
+	rm $DEFAULT_QUEUE_PATH
+	;;
+e | enqueue )
+	enqueue $1
+	;;
+le | left )
+	left_files
+	;;
+cl | clear )
+	rm $DEFAULT_QUEUE_PATH
+	;;
+d | diff )
+	autocomplete_file $2 "A M"
+	check_coincidences $2
+	svn diff $FILE
+
+	;;
+a | add )
+	autocomplete_file $2 "?"
+	check_coincidences $2
+	svn add $FILE
+	;;
+r | revert)
+	autocomplete_file $2 "A M D"
+	check_coincidences $2
+	svn revert $FILE
+	;;
+rm | remove)
+	autocomplete_file $2 "A M"
+	check_coincidences $2
+	svn rm $FILE
+	;;
+* )
+	# Unknown command, trying to add first argument as a file
+	enqueue $1
+;;
+esac

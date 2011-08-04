@@ -1,0 +1,87 @@
+#!/bin/bash
+if [ "$1" = "--help" -o "$1" = "-h" ]
+then
+	echo ""
+	echo "Este script genera un HTML a partir de los pedazos sacados de una imágen Gimp con la herramienta 'Guillotina'"	
+	echo ""
+	echo "Se llama de esta manera:"
+	echo "pastealo prefijo-imagen [nombre-archivo-final]"
+	echo ""
+	echo "El prefijo de la imágen es lo que está adelante del n-n.extension, donde n y n son números. El prefijo no debe terminar con un número."
+	echo ""
+	exit
+fi
+
+if [ "$2" = "" ]
+then
+	HTML='pegado.html'
+else
+	HTML=$2
+fi
+
+#TODO: verificar si existe
+rm $HTML
+touch $HTML
+
+echo "<html><head><title>Pegado</title></head><style type='text/css'>" >> $HTML
+
+BODY=body.html.tmp
+# Creamos el archivo temporal para el body si no existe
+touch $BODY
+# Borramos su contenido, si ya existe
+echo "" > $BODY
+
+WIDTH_ACUMULADO=0
+HEIGHT_ACUMULADO=0
+WIDTH_BUFFER=0
+WIDTH_BUFFER=0
+
+ls *[0-9]*-[0-9]*.* |
+while read name
+do
+	#TODO: mejorar esto para cuando hay numeros de varios dígitos
+	COLUMNA=${name:0:1}	
+	FILA=${name:2:1}
+	echo "#d${FILA}-${COLUMNA}{" >> $HTML
+	#TODO: ver que la extensión tiene que ser dinámica, depende de la imágen
+	echo "background: url('${COLUMNA}-${FILA}.png') no-repeat top left;" >> $HTML
+	
+	SIZE=$(identify ${COLUMNA}-${FILA}.png | awk '{print $3}')
+ 
+	#IFS es el separador de strings que por default es espacios, tabs, etc.; lo configuramos como 'x'
+	IFS=x
+	i=0
+	for dimension in $SIZE; do
+		if [ $i = 0 ] 
+		then
+			WIDTH=$dimension
+			i=$i+1
+		else
+			HEIGHT=$dimension
+		fi
+	done
+
+	echo "width:${WIDTH}px;" >> $HTML
+	echo "height:${HEIGHT}px;" >> $HTML
+	if [ $FILA = 0 ] 
+	then
+		HEIGHT_ACUMULADO=0
+		WIDTH_ACUMULADO=$(echo $WIDTH_ACUMULADO + $WIDTH_BUFFER | bc)
+	else
+		#Usamos esta variable porque cuando cambie de fila tiene que sumarle el hegiht de la fila anterior
+		WIDTH_BUFFER=$WIDTH
+		HEIGHT_ACUMULADO=$(echo $HEIGHT_ACUMULADO + $HEIGHT_BUFFER | bc)
+	fi
+	HEIGHT_BUFFER=$HEIGHT
+	echo "left: ${WIDTH_ACUMULADO}px;" >> $HTML
+	echo "top:${HEIGHT_ACUMULADO}px;" >> $HTML
+	echo "position:absolute;" >> $HTML
+	echo "}" >> $HTML
+
+	echo "<div id='d${FILA}-${COLUMNA}'>" >> $BODY
+	echo "</div>" >> $BODY
+done
+echo "</style>" >> $HTML
+cat $BODY >> $HTML
+echo "</html>" >> $HTML
+rm $BODY

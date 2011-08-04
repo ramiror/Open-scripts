@@ -1,0 +1,3 @@
+#!/bin/bash
+sudo rm -rf lucene_beneficio_search_index
+sudo rm -rf lucene_beneficio_search_index_backoffice

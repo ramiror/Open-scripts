@@ -1,0 +1,20 @@
+#!/bin/bash
+#
+# Este script es un grep que busca determinada palabra recursivamente
+# en un directorio, ignorando todo archivo que contenga la palabra 
+# "log" o "svn" en su ruta
+#
+if [ "$1" = "--help" -o "$1" = "-h" ]
+then
+	echo
+	echo Este script es un grep que busca determinada palabra recursivamente en un directorio
+	echo Ignorando los archivos de log y svn
+	echo
+	echo Se llama así: 
+	echo \<devgrep palabra\>
+	echo
+	exit
+fi
+
+grep -r $1 . | grep -v svn | grep -v log
+

@@ -1,0 +1,44 @@
+#!/bin/bash
+#
+# Este script crea un VirtualHost a partir de un nombre pasado como primer
+# parámetro.
+#
+# TODO: mejorar! restaurar los chmod para que no sean accesible para todos al final
+# TODO: hacer que si ya existe lo borre y cree uno nuevo (opcional) o que cancele según los parámetros ingresados
+# TODO: esto es feo, por default BORRA LA CONFIG!
+VHFILE=/etc/apache2/sites-available/$1
+VHDIR=/var/www/$1
+sudo touch $VHFILE
+sudo chmod 777 $VHFILE
+cat > $VHFILE <<EOF
+	<VirtualHost *:80>
+        ServerAdmin webmaster@localhost
+	ServerName $1
+	ServerAlias www.$1
+        DocumentRoot /var/www/$1
+        <Directory />
+                Options FollowSymLinks
+                AllowOverride All
+		Order allow,deny
+		allow from all
+        </Directory>
+
+        ErrorLog /var/log/apache2/$1.error.log
+
+        # Possible values include: debug, info, notice, warn, error, crit,
+        # alert, emerg.
+        LogLevel warn
+
+        CustomLog /var/log/apache2/$1.access.log combined
+	</VirtualHost>
+EOF
+sudo a2ensite $1
+sudo mkdir $VHDIR
+sudo chmod 770 $VHDIR
+sudo chown www-data $VHDIR
+sudo chgrp www-data $VHDIR
+
+touch $VHDIR/index.html
+echo "Funciona!" >> $VHDIR/index.html
+
+sudo /etc/init.d/apache2 restart

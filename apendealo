@@ -1,0 +1,7 @@
+#!/bin/bash
+#
+# Este comando apendea cosas a un archivo de texto
+#
+FILE_PATH=~/Dropbox/pendientes.txt
+
+echo "$1" >> $FILE_PATH

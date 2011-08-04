@@ -1,0 +1,6 @@
+#!/bin/bash
+#
+# Te muestra tu archivo de pendientes
+#
+FILE="Dropbox/pendientes.txt"
+cat ~/$FILE

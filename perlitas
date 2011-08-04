@@ -1,0 +1,12 @@
+#!/bin/bash
+
+if [ "$1" = "--help" -o "$1" = "-h" ]
+then
+	echo
+	echo Este script muestra los comandos personales que creamos en nuestra carpeta
+	echo
+	exit
+fi
+
+PERSONAL_BIN_PATH=~/bin/
+ls $PERSONAL_BIN_PATH

@@ -1,0 +1,28 @@
+#!/bin/bash
+if [ "$1" = "--help" -o "$1" = "-h" ]
+then
+	echo "Este script monta una imágen iso"	
+	echo ""
+	echo "mountiso [<nombre-dispositivo>] <ruta-archivo-iso>"
+	echo ""
+	exit
+fi
+
+case $# in
+    1 )
+	DEVICE_NAME=$(basename $1)
+	;;
+    2 )
+        DEVICE_NAME=$2
+	;;
+    * )
+	echo Número erróneo de argumentos. Leé la ayuda capo.
+	exit 1
+	;;
+esac
+DEVICE_PATH=/media/$DEVICE_NAME
+ISO_PATH=$1
+
+
+sudo mkdir $DEVICE_PATH 
+sudo mount -o loop -t iso9660 $ISO_PATH $DEVICE_PATH

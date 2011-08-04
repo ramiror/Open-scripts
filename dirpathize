@@ -1,0 +1,6 @@
+#!/bin/bash
+#
+# Este programa agrega el directorio pasado como parámetro 1 al path
+# (agregándolo al .bashrc del usuario)
+#
+echo export PATH=\$PATH:$(readlink -f $1) >> ~/.bashrc
