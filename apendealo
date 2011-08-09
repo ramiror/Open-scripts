@@ -4,4 +4,4 @@
 #
 FILE_PATH=~/Dropbox/pendientes.txt
 
-echo "$1" >> $FILE_PATH
+echo $* >> $FILE_PATH

@@ -1,0 +1,15 @@
+# shdb - shell database (!) - ramiror - made public on Tue Aug  9 01:13:51 ART 2011
+#
+# "An 'apendealo' replacement"
+# shdb will append whatever you type to a "database" located in your database directory
+# (currently hardcoded to ~/shdb. The name of the datbase would match the name of the 
+# executable, so to create a new database you should copy the binary... or if you're 
+# smart, you'd hard-link it :)
+# If it's called w/o params, it simply shows the contents of the... well, "database"
+
+YO=$(basename $0)
+if [ $# -eq 0 ]; then
+	cat ~/shdb/$YO
+else
+	echo $(hoy) $* >> ~/shdb/$YO
+fi

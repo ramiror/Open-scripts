@@ -25,7 +25,7 @@ touch $HTML
 
 echo "<html><head><title>Pegado</title></head><style type='text/css'>" >> $HTML
 
-BODY=body.html.tmp
+BODY=body.html.tmp.$$
 # Creamos el archivo temporal para el body si no existe
 touch $BODY
 # Borramos su contenido, si ya existe
